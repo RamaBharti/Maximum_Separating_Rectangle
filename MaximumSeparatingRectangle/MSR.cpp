@@ -1,70 +1,69 @@
-//MSR
-//It is a variation of the Maximum Inner Rectangle problem and is NP-hard. There is no known polynomial-time algorithm for solving the problem, but there are several approximate and heuristic approaches that have been proposed, including the use of linear programming, genetic algorithms, and branch-and-bound techniques.
-//The staircase approach
-//The staircase approach is a method that can be used to find the maximum area rectangle that separates a set of red and blue points. 
-//The basic idea is to divide the space into a grid of squares, and then iteratively expand the squares in the grid to form rectangles. The rectangles are expanded in a stair-like fashion, starting with the smallest squares and gradually increasing the size of the rectangles. 
-//The rectangles are checked for feasibility, meaning that they do not contain any red points on one side and any blue points on the other side. The maximum area feasible rectangle is returned as the solution to the problem.
-//This approach can work well in practice, but it can be computationally expensive, especially when the number of points is large. The time complexity of the algorithm is O(n^3), where n is the number of points.
-
-#include <iostream>
-#include <algorithm>
-#include <vector>
+#include<iostream>
+#include<algorithm>
 using namespace std;
 
-struct Point{ 
+struct Point{
     int x, y;
-    int color; //0 for red, 1 for blue
 };
-struct Rectangle{
-    int x1, y1, x2, y2;
-    int area;
-};
-
-//function to check if a rectangle is feasible
-bool isFeasible(vector<Point>& points, Rectangle rect){
-    int redCount =0, blueCount=0;
-    for(int i=0; i<points.size(); i++){
-        if(points[i].x>=rect.x1 && points[i].x<=rect.x2 && points[i].y>=rect.y1 && points[i].y<=rect.y2){
-            if(points[i].color==0) redCount++;
-            else blueCount++;
-        }
-    }
-    return (redCount==0||blueCount==0);
+bool cmpX(const Point& p1, const Point& p2){
+    return (p1.x < p2.x);
 }
-
-//function to find the maximum separating rectangle
-Rectangle findMaximumSeparatingRectangle(vector<Point>&points){
-    //intialize the grid size
-    int gridSize=100;
-    //initialize the maximum rectangle
-    Rectangle maxRect={-1, -1, -1, -1, -1};
-    //iterate over the grid
-    for(int i=0; i<gridSize; i++){
-        for(int j=0; j<gridSize; j++){
-            //expand the rectangle in a stair-like fashion
-            for(int k=i; k<gridSize; k++){
-                for(int l=j; l<gridSize; l++){
-                    Rectangle rect = {i, j, k, l, (k-i)*(l-j)};
-                    if(isFeasible(points, rect)&&rect.area>maxRect.area){
-                        maxRect=rect;
-                    }
-                }
-            }
-        }
-    }
-    return maxRect;
+bool cmpY(const Point& p1, const Point& p2){
+    return (p1.y < p2.y);
 }
 
 int main(){
-    //example input
-    vector<Point> points = {{1,1,0}, {2,2,0}, {3,3,0}, {4,4,1}, {5,5,1}};
-    //find the maximum separating rectangle
-    Rectangle maxRect = findMaximumSeparatingRectangle(points);
-    //print the maximum rectangle
-    cout<<"Maximum rectangle: ("<< maxRect.x1 <<", "<< maxRect.y1 << ") to (" <<maxRect.x2 << ", "<< maxRect.y2 << "), area: "<<maxRect.area <<endl;
-    return 0; 
-}
+    int n;
+    cin>>n;
+    vector<Point> red(n);
+    for(int i=0; i<n; i++){
+        cin>>red[i].x>>red[i].y;
+    }
 
-//`Point` struct represents a point in the plane with its x and y coordinates and color (0 for red and 1 for blue).
-//`Rectangle` struct represents a rectangle with its coordinates (x1, y1, x2, y2) and area.
-// the function `isFeasible` checks if a given rectangle separates the red and blue points.
+    int m;
+    cin>>m;
+    vector<Point> blue(m);
+    for(int i=0; i<m; i++){
+        cin>>blue[i].x>>blue[i].y;
+    }
+
+    sort(blue.begin(), blue.end(), cmpX); //sort blue points based on x-coordinates
+
+    int maxArea=0;
+    for(int i=0; i<n; i++){
+        int leftHighY=-1, leftLowY=-1, rightHighY=-1, rightLowY=-1;
+        for(int j=0; j<m; j++){
+            if(blue[j].x<red[i].x){ //blue point is to left of the red poits
+                if(leftHighY==-1||blue[j].y>blue[leftLowY].y){
+                    leftHighY=j;
+                }
+                if(leftLowY==-1||blue[j].y<blue[leftLowY].y){
+                    leftLowY=j;
+                }
+            }else{ //blue point is to the right of red point
+                if(rightHighY==-1||blue[j].y>blue[rightHighY].y){
+                    rightHighY=j;
+                }
+                if(rightLowY==-1||blue[j].y<blue[rightLowY].y){
+                    rightHighY=j;
+                }
+            }
+        }
+        int leftWidth, rightWidth, height;
+
+        if(leftHighY==-1) leftWidth=0;
+        else leftWidth=(blue[leftHighY].x - red[i].x);
+
+        if(rightLowY==-1) rightWidth=0;
+        else rightWidth=(red[i].x - blue[rightLowY].x);
+
+        if(leftHighY==-1||rightHighY==-1) height=0;
+        else height=max(blue[leftHighY].y, blue[rightHighY].y) - red[i].y;
+
+        int area=(leftWidth+rightWidth)*height;
+        maxArea=max(maxArea, area);
+
+    }
+    cout<<maxArea<<endl;
+    return 0;
+}
